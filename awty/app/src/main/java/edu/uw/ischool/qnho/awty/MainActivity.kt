@@ -66,16 +66,17 @@ class MainActivity : AppCompatActivity() {
         })
 
         btn.setOnClickListener {
-            if(delay.text.toString().toInt() > 0) {
+            if(delay.text.toString().toInt() < 0) {
                 Toast.makeText(this, "Invalid delay time. Please put a positive integer that is larger than 0.", Toast.LENGTH_SHORT).show()
-            }
-            if(btn.text == "Start"){
-                btn.text = "Stop"
-                startNagging()
-            }else{
-                btn.text = "Start"
-                unregisterReceiver(receiver)
-                receiver = null
+            } else {
+                if(btn.text == "Start"){
+                    btn.text = "Stop"
+                    startNagging()
+                }else{
+                    btn.text = "Start"
+                    unregisterReceiver(receiver)
+                    receiver = null
+                }
             }
 
         }
@@ -91,7 +92,7 @@ class MainActivity : AppCompatActivity() {
             receiver = object : BroadcastReceiver() {
                 override fun onReceive(p0: Context?, p1: Intent?) {
                     Log.i("WHY", "calling")
-//                    Toast.makeText(activity, "(425) 555-1212: Are we there yet?", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(activity, "(425) 555-1212: Are we there yet?", Toast.LENGTH_SHORT).show()
                     Toast.makeText(activity, "Texting ${num.text} : ${msg.text}", Toast.LENGTH_SHORT).show()
                 }
             }
@@ -103,7 +104,7 @@ class MainActivity : AppCompatActivity() {
             val pendingIntent = PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
 
             val alarmManager : AlarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-            alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), (delayTime * 60000).toLong(), pendingIntent)
+            alarmManager.setInexactRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), (delayTime * 60000).toLong(), pendingIntent)
         }
     }
 }
