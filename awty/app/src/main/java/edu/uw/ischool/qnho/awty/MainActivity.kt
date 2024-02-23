@@ -2,19 +2,24 @@ package edu.uw.ischool.qnho.awty
 
 import android.app.AlarmManager
 import android.app.PendingIntent
+import android.content.ActivityNotFoundException
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import androidx.appcompat.app.AppCompatActivity
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import android.provider.Telephony
+import android.telephony.SmsManager
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.Log
-import android.widget.Button
-import android.widget.EditText
-import android.widget.Toast
-import androidx.core.content.getSystemService
+import android.widget.*
+import androidx.appcompat.app.AppCompatActivity
+import java.util.Timer
+import java.util.TimerTask
+
 
 const val ALARM_ACTION = "edu.uw.ischool.qnho.ALARM"
 
@@ -82,6 +87,55 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun checkForSmsPermission() {
+        if (checkSelfPermission(android.Manifest.permission.SEND_SMS) !=
+            PackageManager.PERMISSION_GRANTED) {
+            Log.d("MainActivity", "Permission not granted!")
+            requestPermissions(arrayOf(android.Manifest.permission.SEND_SMS), 1)
+            btn.isEnabled = false
+        } else {
+            btn.isEnabled = true
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int, permissions: Array<String>, grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        when (requestCode) {
+            1 -> {
+                if (permissions[0].equals(android.Manifest.permission.SEND_SMS, ignoreCase = true)
+                    && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    // Permission was granted.
+                } else {
+                    // Permission denied.
+                    Log.d("MainActivity", "Failed to obtain permission")
+                    Toast.makeText(
+                        this,
+                        "Failed to obtain permission",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    // Disable the message button.
+                    btn.isEnabled = false
+                }
+            }
+        }
+    }
+
+    private fun sendSms(phoneNumber: String, message: String) {
+        // Check if the SEND_SMS permission is not granted
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+            checkSelfPermission(android.Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            // Request the SEND_SMS permission
+            requestPermissions(arrayOf(android.Manifest.permission.SEND_SMS), 1)
+        } else {
+            val smsManager = SmsManager.getDefault()
+            // Send the SMS
+            smsManager.sendTextMessage(phoneNumber, null, message, null, null)
+        }
+    }
+
     fun startNagging() {
         val activity = this
         val delayTime = delay.text.toString().toInt()
@@ -92,8 +146,7 @@ class MainActivity : AppCompatActivity() {
             receiver = object : BroadcastReceiver() {
                 override fun onReceive(p0: Context?, p1: Intent?) {
                     Log.i("WHY", "calling")
-                    Toast.makeText(activity, "(425) 555-1212: Are we there yet?", Toast.LENGTH_SHORT).show()
-                    Toast.makeText(activity, "Texting ${num.text} : ${msg.text}", Toast.LENGTH_SHORT).show()
+                    sendSms(num.text.toString(), msg.text.toString())
                 }
             }
 
